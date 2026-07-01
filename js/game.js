@@ -346,7 +346,7 @@ attractEl.id = 'attract-overlay';
 attractEl.style.cssText = `
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding-top: 15vh;
+  padding-top: ${window.matchMedia('(pointer: coarse)').matches ? '0px' : '15vh'};
   z-index: 250; pointer-events: none;
   font-family: 'Orbitron', sans-serif;
 `;
@@ -358,22 +358,13 @@ waveIcon.src = '/WaveIcon.png';
 waveIcon.alt = 'WaveIcon';
 
 const attractTitle = document.createElement('div');
-attractTitle.style.cssText = `
-  font-weight: 900; font-size: clamp(32px, 10vw, 72px); color: #ffffff;
-  filter: drop-shadow(0 0 15px rgba(0,255,213,0.4)) drop-shadow(0 4px 10px rgba(0,0,0,0.9));
-  margin-bottom: 30px; letter-spacing: clamp(2px, 0.8vw, 6px);
-  text-align: center; word-break: break-word; max-width: 90vw;
-`;
+attractTitle.className = 'attract-title';
 attractTitle.innerHTML = '<span style="background: linear-gradient(135deg, #00ffd5 0%, #00a2ff 45%, #a200ff 80%, #ff00c8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">WAVE</span> RACING';
+
 const attractSub = document.createElement('div');
-attractSub.style.cssText = `
-  font-weight: 700; font-size: clamp(14px, 3.5vw, 24px); color: rgba(255,255,255,0.9);
-  text-shadow: 0 0 20px rgba(255,255,255,0.4), 0 2px 8px rgba(0,0,0,0.8);
-  text-align: center; max-width: 90vw;
-  animation: attractPulse 1.2s ease-in-out infinite;
-`;
+attractSub.className = 'attract-sub';
 attractSub.textContent = window.matchMedia('(pointer: coarse)').matches
-  ? 'TOCA LA PANTALLA PARA CORRER'
+  ? '' // On touch devices we show the big startBtn in the center, so we don't need text
   : 'PRESIONA ESPACIO PARA CORRER';
 
 // Add pulse and credit animations/styles
@@ -387,6 +378,28 @@ attractStyle.textContent = `
     50% { opacity: 1; transform: scale(1.05); }
   }
 
+  .attract-title {
+    font-weight: 900;
+    font-size: clamp(32px, 8vw, 68px);
+    color: #ffffff;
+    filter: drop-shadow(0 0 15px rgba(0,255,213,0.4)) drop-shadow(0 4px 10px rgba(0,0,0,0.9));
+    margin-bottom: 24px;
+    letter-spacing: clamp(2px, 0.8vw, 6px);
+    text-align: center;
+    word-break: break-word;
+    max-width: 90vw;
+  }
+
+  .attract-sub {
+    font-weight: 700;
+    font-size: clamp(14px, 3vw, 24px);
+    color: rgba(255,255,255,0.9);
+    text-shadow: 0 0 20px rgba(255,255,255,0.4), 0 2px 8px rgba(0,0,0,0.8);
+    text-align: center;
+    max-width: 90vw;
+    animation: attractPulse 1.2s ease-in-out infinite;
+  }
+
   .wave-icon {
     width: clamp(110px, 18vw, 160px);
     height: auto;
@@ -398,6 +411,17 @@ attractStyle.textContent = `
   @keyframes floatIcon {
     0%, 100% { transform: translateY(0) rotate(0deg); }
     50% { transform: translateY(-8px) rotate(3deg); }
+  }
+
+  @media (pointer: coarse) {
+    .attract-title {
+      font-size: clamp(26px, 6vw, 44px);
+      margin-bottom: 12px;
+    }
+    .wave-icon {
+      width: clamp(75px, 10vw, 95px);
+      margin-bottom: 12px;
+    }
   }
 `;
 document.head.appendChild(attractStyle);
@@ -727,6 +751,17 @@ function update() {
 
   // ── Sync touch controls visibility with race state ──
   if (touchControls) touchControls.update(raceState);
+
+  // ── Sync HUD / Minimap visibility with race state ──
+  const hudCanvas = document.getElementById('hud-canvas');
+  const hudOverlay = document.getElementById('hud-overlay');
+  const minimapCanvas = document.getElementById('minimap');
+  const controlsEl = document.getElementById('controls');
+  const showHUD = raceState === 'racing' || raceState === 'countdown' || raceState === 'grid';
+  if (hudCanvas) hudCanvas.style.display = showHUD ? 'block' : 'none';
+  if (hudOverlay) hudOverlay.style.display = showHUD ? 'block' : 'none';
+  if (minimapCanvas) minimapCanvas.style.display = showHUD ? 'block' : 'none';
+  if (controlsEl) controlsEl.style.display = showHUD ? 'block' : 'none';
 
   // ══════════════════════════════════════════
   //  STATE: ATTRACT — AI car racing, helicopter cam
