@@ -13,7 +13,7 @@ export function createTouchControls(keys) {
   const isFullscreenSupported = !!(docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen);
   window.isFullscreenSupported = isFullscreenSupported;
 
-  const pauseRight = isFullscreenSupported ? '68px' : '12px';
+  const pauseRight = '68px';
 
   // ══════════════════════════════════════
   //  ROTATE OVERLAY — inject into DOM
@@ -252,6 +252,15 @@ export function createTouchControls(keys) {
       fill: #00ffd5;
       filter: drop-shadow(0 0 4px rgba(0, 255, 213, 0.5));
       pointer-events: none;
+    }
+
+    @keyframes tcFadeIn {
+      from { opacity: 0; transform: translate(-50%, 10px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+    @keyframes tcFadeOut {
+      from { opacity: 1; transform: translate(-50%, 0); }
+      to { opacity: 0; transform: translate(-50%, 10px); }
     }
   `;
   document.head.appendChild(styleEl);
@@ -664,9 +673,6 @@ export function createTouchControls(keys) {
     </svg>
   `;
   document.body.appendChild(fsBtn);
-  if (!isFullscreenSupported) {
-    fsBtn.style.display = 'none';
-  }
 
   // ══════════════════════════════════════
   //  PAUSE BUTTON
@@ -712,10 +718,55 @@ export function createTouchControls(keys) {
   }
 
   // Cross-platform hybrid touch/click handlers to fix iOS Safari touch latency/blocking
+  function showToast(message) {
+    let toast = document.getElementById('tc-toast');
+    if (toast) toast.remove();
+    toast = document.createElement('div');
+    toast.id = 'tc-toast';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 15, 20, 0.9);
+      border: 1px solid rgba(0, 255, 213, 0.4);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px;
+      text-align: center;
+      z-index: 9999;
+      pointer-events: none;
+      box-shadow: 0 0 20px rgba(0, 255, 213, 0.2);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      animation: tcFadeIn 0.3s ease forwards;
+      max-width: 90%;
+      width: 320px;
+      line-height: 1.4;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.style.animation = 'tcFadeOut 0.3s ease forwards';
+        setTimeout(() => {
+          if (toast.parentNode) toast.remove();
+        }, 300);
+      }
+    }, 4500);
+  }
+
   const handleFS = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleFullscreen();
+    if (isFullscreenSupported) {
+      toggleFullscreen();
+    } else {
+      showToast('Para pantalla completa en iPhone, añadí el juego a tu Pantalla de Inicio (Compartir ➔ Añadir a pantalla de inicio)');
+    }
   };
   fsBtn.addEventListener('touchstart', handleFS, { passive: false });
   fsBtn.addEventListener('click', handleFS);
