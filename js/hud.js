@@ -250,7 +250,9 @@ export function createHUD() {
     octx.lineWidth = 5;
     octx.lineJoin = 'round';
     const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-    const lapX = isMobile ? overlay.width - 128 : overlay.width - 22;
+    const safeAreaRight = window.safeAreaRight || 0;
+    const rightOffset = window.isIOS ? 68 : 128;
+    const lapX = isMobile ? overlay.width - rightOffset - safeAreaRight : overlay.width - 22;
     octx.strokeText(lapText, lapX, 18);
     octx.fillStyle = '#ffffff';
     octx.fillText(lapText, lapX, 18);

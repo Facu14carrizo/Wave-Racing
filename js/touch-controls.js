@@ -8,12 +8,29 @@ export function createTouchControls(keys) {
   const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
   if (!isTouch) return null;
 
+  // ── Detect iOS ──
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  window.isIOS = isIOS;
+
   // ── Check if Fullscreen API is supported ──
   const docEl = document.documentElement;
   const isFullscreenSupported = !!(docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen);
   window.isFullscreenSupported = isFullscreenSupported;
 
-  const pauseRight = '68px';
+  // ── Measure Safe Area Insets ──
+  function updateSafeArea() {
+    const div = document.createElement('div');
+    div.style.position = 'fixed';
+    div.style.right = 'env(safe-area-inset-right, 0px)';
+    document.body.appendChild(div);
+    window.safeAreaRight = parseInt(window.getComputedStyle(div).right) || 0;
+    document.body.removeChild(div);
+  }
+  updateSafeArea();
+  window.addEventListener('resize', updateSafeArea);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(updateSafeArea, 300);
+  });
 
   // ══════════════════════════════════════
   //  ROTATE OVERLAY — inject into DOM
@@ -220,7 +237,7 @@ export function createTouchControls(keys) {
     #tc-pause-btn {
       position: fixed;
       top: max(env(safe-area-inset-top, 0px), 12px);
-      right: max(env(safe-area-inset-right, 0px), ${pauseRight});
+      right: calc(max(env(safe-area-inset-right, 0px), 12px) + ${isIOS ? '0px' : '56px'});
       width: 44px;
       height: 44px;
       border-radius: 12px;
@@ -673,6 +690,9 @@ export function createTouchControls(keys) {
     </svg>
   `;
   document.body.appendChild(fsBtn);
+  if (isIOS) {
+    fsBtn.style.display = 'none';
+  }
 
   // ══════════════════════════════════════
   //  PAUSE BUTTON
@@ -696,6 +716,10 @@ export function createTouchControls(keys) {
   pauseBtn.style.display   = 'none';
 
   function toggleFullscreen() {
+    if (!isFullscreenSupported) {
+      showToast('Para pantalla completa en iPhone, añadí el juego a tu Pantalla de Inicio (Compartir ➔ Añadir a pantalla de inicio)');
+      return;
+    }
     const doc = window.document;
     const docEl = doc.documentElement;
 
@@ -716,6 +740,7 @@ export function createTouchControls(keys) {
       }
     }
   }
+  window.toggleFullscreen = toggleFullscreen;
 
   // Cross-platform hybrid touch/click handlers to fix iOS Safari touch latency/blocking
   function showToast(message) {
@@ -762,11 +787,7 @@ export function createTouchControls(keys) {
   const handleFS = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (isFullscreenSupported) {
-      toggleFullscreen();
-    } else {
-      showToast('Para pantalla completa en iPhone, añadí el juego a tu Pantalla de Inicio (Compartir ➔ Añadir a pantalla de inicio)');
-    }
+    toggleFullscreen();
   };
   fsBtn.addEventListener('touchstart', handleFS, { passive: false });
   fsBtn.addEventListener('click', handleFS);

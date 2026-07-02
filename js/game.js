@@ -693,6 +693,7 @@ pauseEl.innerHTML = `
       <button class="pause-btn sfx-btn">SONIDO: ON</button>
       <button class="pause-btn music-btn">MÚSICA: ON</button>
       <button class="pause-btn cam-btn">CÁMARA: TERCERA PERSONA</button>
+      <button class="pause-btn fs-menu-btn">PANTALLA COMPLETA</button>
       <button class="pause-btn restart-btn">REINICIAR CARRERA</button>
       <button class="pause-btn exit-btn">SALIR AL MENÚ</button>
     </div>
@@ -782,6 +783,12 @@ bindTap(pauseEl.querySelector('.music-btn'), () => {
 bindTap(pauseEl.querySelector('.cam-btn'), () => {
   cameraMode = (cameraMode + 1) % 4;
   updatePauseMenuUI();
+});
+
+bindTap(pauseEl.querySelector('.fs-menu-btn'), () => {
+  if (window.toggleFullscreen) {
+    window.toggleFullscreen();
+  }
 });
 
 bindTap(pauseEl.querySelector('.restart-btn'), () => {
