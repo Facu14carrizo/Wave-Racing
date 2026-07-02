@@ -747,12 +747,23 @@ function togglePause() {
 }
 window.togglePause = togglePause;
 
-// Wire up events
-pauseEl.querySelector('.resume-btn').addEventListener('click', () => {
+// Wire up events with hybrid touch/click helper to prevent iOS Safari input blocking
+function bindTap(btn, callback) {
+  if (!btn) return;
+  const handler = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    callback(e);
+  };
+  btn.addEventListener('touchstart', handler, { passive: false });
+  btn.addEventListener('click', handler);
+}
+
+bindTap(pauseEl.querySelector('.resume-btn'), () => {
   togglePause();
 });
 
-pauseEl.querySelector('.sfx-btn').addEventListener('click', () => {
+bindTap(pauseEl.querySelector('.sfx-btn'), () => {
   sfxEnabled = !sfxEnabled;
   if (sound && sound.master) {
     sound.master.gain.value = sfxEnabled ? 0.75 : 0;
@@ -760,7 +771,7 @@ pauseEl.querySelector('.sfx-btn').addEventListener('click', () => {
   updatePauseMenuUI();
 });
 
-pauseEl.querySelector('.music-btn').addEventListener('click', () => {
+bindTap(pauseEl.querySelector('.music-btn'), () => {
   musicEnabled = !musicEnabled;
   if (music && music.master) {
     music.master.gain.value = musicEnabled ? 0.50 : 0;
@@ -768,17 +779,17 @@ pauseEl.querySelector('.music-btn').addEventListener('click', () => {
   updatePauseMenuUI();
 });
 
-pauseEl.querySelector('.cam-btn').addEventListener('click', () => {
+bindTap(pauseEl.querySelector('.cam-btn'), () => {
   cameraMode = (cameraMode + 1) % 4;
   updatePauseMenuUI();
 });
 
-pauseEl.querySelector('.restart-btn').addEventListener('click', () => {
+bindTap(pauseEl.querySelector('.restart-btn'), () => {
   togglePause();
   restartRace();
 });
 
-pauseEl.querySelector('.exit-btn').addEventListener('click', () => {
+bindTap(pauseEl.querySelector('.exit-btn'), () => {
   togglePause();
   raceState = 'attract';
   positionForAttract();

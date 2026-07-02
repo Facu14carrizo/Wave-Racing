@@ -8,6 +8,13 @@ export function createTouchControls(keys) {
   const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
   if (!isTouch) return null;
 
+  // ── Check if Fullscreen API is supported ──
+  const docEl = document.documentElement;
+  const isFullscreenSupported = !!(docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen);
+  window.isFullscreenSupported = isFullscreenSupported;
+
+  const pauseRight = isFullscreenSupported ? '68px' : '12px';
+
   // ══════════════════════════════════════
   //  ROTATE OVERLAY — inject into DOM
   // ══════════════════════════════════════
@@ -213,7 +220,7 @@ export function createTouchControls(keys) {
     #tc-pause-btn {
       position: fixed;
       top: max(env(safe-area-inset-top, 0px), 12px);
-      right: max(env(safe-area-inset-right, 0px), 68px);
+      right: max(env(safe-area-inset-right, 0px), ${pauseRight});
       width: 44px;
       height: 44px;
       border-radius: 12px;
@@ -657,6 +664,9 @@ export function createTouchControls(keys) {
     </svg>
   `;
   document.body.appendChild(fsBtn);
+  if (!isFullscreenSupported) {
+    fsBtn.style.display = 'none';
+  }
 
   // ══════════════════════════════════════
   //  PAUSE BUTTON
@@ -672,11 +682,6 @@ export function createTouchControls(keys) {
     </svg>
   `;
   document.body.appendChild(pauseBtn);
-
-  pauseBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (window.togglePause) window.togglePause();
-  });
 
   // Initial: attract state
   startBtn.style.display   = 'flex';
@@ -706,10 +711,22 @@ export function createTouchControls(keys) {
     }
   }
 
-  fsBtn.addEventListener('click', (e) => {
+  // Cross-platform hybrid touch/click handlers to fix iOS Safari touch latency/blocking
+  const handleFS = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     toggleFullscreen();
-  });
+  };
+  fsBtn.addEventListener('touchstart', handleFS, { passive: false });
+  fsBtn.addEventListener('click', handleFS);
+
+  const handlePause = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (window.togglePause) window.togglePause();
+  };
+  pauseBtn.addEventListener('touchstart', handlePause, { passive: false });
+  pauseBtn.addEventListener('click', handlePause);
 
   function updateFullscreenIcon() {
     const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
