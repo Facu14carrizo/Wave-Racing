@@ -170,6 +170,44 @@ export function createTouchControls(keys) {
     .joystick-splash {
       animation: joySplash 0.35s ease-out forwards;
     }
+
+    /* ── Fullscreen Button ── */
+    #tc-fullscreen-btn {
+      position: fixed;
+      top: max(env(safe-area-inset-top, 0px), 12px);
+      right: max(env(safe-area-inset-right, 0px), 12px);
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 2px solid rgba(0, 255, 213, 0.35);
+      box-shadow: 0 0 15px rgba(0, 255, 213, 0.15), inset 0 0 8px rgba(0, 255, 213, 0.1);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+      padding: 0;
+    }
+
+    #tc-fullscreen-btn:active {
+      transform: scale(0.9);
+      border-color: rgba(0, 255, 213, 0.85);
+      box-shadow: 0 0 20px rgba(0, 255, 213, 0.45), inset 0 0 10px rgba(0, 255, 213, 0.25);
+    }
+
+    #tc-fullscreen-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: #00ffd5;
+      filter: drop-shadow(0 0 4px rgba(0, 255, 213, 0.5));
+      pointer-events: none;
+    }
   `;
   document.head.appendChild(styleEl);
 
@@ -565,6 +603,69 @@ export function createTouchControls(keys) {
   startBtn.style.display   = 'flex';
   restartBtn.style.display = 'none';
   container.style.display  = 'none';
+
+  // ══════════════════════════════════════
+  //  FULLSCREEN BUTTON
+  // ══════════════════════════════════════
+  let fsBtn = document.getElementById('tc-fullscreen-btn');
+  if (fsBtn) fsBtn.remove();
+  fsBtn = document.createElement('button');
+  fsBtn.id = 'tc-fullscreen-btn';
+  fsBtn.setAttribute('aria-label', 'Pantalla completa');
+  fsBtn.innerHTML = `
+    <svg viewBox="0 0 24 24">
+      <path class="enter-path" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+      <path class="exit-path" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" style="display: none;"/>
+    </svg>
+  `;
+  document.body.appendChild(fsBtn);
+
+  function toggleFullscreen() {
+    const doc = window.document;
+    const docEl = doc.documentElement;
+
+    const requestFS = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+    const exitFS = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+    const isFS = !!(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement);
+
+    if (!isFS) {
+      if (requestFS) {
+        requestFS.call(docEl).catch(err => {
+          console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+      }
+    } else {
+      if (exitFS) {
+        exitFS.call(doc);
+      }
+    }
+  }
+
+  fsBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    toggleFullscreen();
+  });
+
+  function updateFullscreenIcon() {
+    const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+    const enterPath = fsBtn.querySelector('.enter-path');
+    const exitPath = fsBtn.querySelector('.exit-path');
+    if (enterPath && exitPath) {
+      if (isFS) {
+        enterPath.style.display = 'none';
+        exitPath.style.display = 'block';
+      } else {
+        enterPath.style.display = 'block';
+        exitPath.style.display = 'none';
+      }
+    }
+  }
+
+  document.addEventListener('fullscreenchange', updateFullscreenIcon);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+  document.addEventListener('mozfullscreenchange', updateFullscreenIcon);
+  document.addEventListener('MSFullscreenChange', updateFullscreenIcon);
 
   return { update, startBtn, restartBtn };
 }
